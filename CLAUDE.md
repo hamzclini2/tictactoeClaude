@@ -14,7 +14,7 @@ Open any `.html` file directly in a browser — no server or build step required
 
 - Commit and push to GitHub after completing each piece of work. Never leave changes uncommitted.
 - Use clean, descriptive commit messages that explain *why*, not just *what*.
-- Remote: `origin` → `hamzclini2/NingaClaude` (GitHub, public).
+- Remote: `origin` → `hamzclini2/tictactoeClaude` (GitHub, public).
 - The `gh` CLI is installed at `/c/Program Files/GitHub CLI/gh.exe`.
 
 ## Architecture
