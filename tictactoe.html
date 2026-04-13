@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; background: #1a1a2e; color: #eee;
+    flex-direction: column; gap: 24px;
+  }
+  h1 { font-size: 2rem; letter-spacing: 2px; }
+  #status {
+    font-size: 1.25rem; min-height: 1.5em;
+    transition: color .2s;
+  }
+  #board {
+    display: grid; grid-template-columns: repeat(3, 120px); grid-template-rows: repeat(3, 120px);
+    gap: 6px;
+  }
+  .cell {
+    background: #16213e; border: none; border-radius: 8px;
+    font-size: 3rem; font-weight: 700; color: #eee; cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .cell:hover:not(.taken) { background: #1a1a40; transform: scale(1.05); }
+  .cell.x { color: #e94560; }
+  .cell.o { color: #0f3460; }
+  .cell.win { background: #e9456022; }
+  #restart {
+    padding: 10px 28px; font-size: 1rem; border: 2px solid #e94560;
+    background: transparent; color: #e94560; border-radius: 6px;
+    cursor: pointer; letter-spacing: 1px; transition: background .2s, color .2s;
+  }
+  #restart:hover { background: #e94560; color: #fff; }
+  #mode { display: flex; gap: 12px; }
+  #mode button {
+    padding: 8px 20px; font-size: .9rem; border: 2px solid #0f3460;
+    background: transparent; color: #0f3460; border-radius: 6px;
+    cursor: pointer; transition: background .2s, color .2s;
+  }
+  #mode button.active, #mode button:hover { background: #0f3460; color: #fff; }
+</style>
+</head>
+<body>
+<h1>Tic Tac Toe</h1>
+<div id="mode">
+  <button class="active" onclick="setMode('ai')">vs Computer</button>
+  <button onclick="setMode('2p')">2 Players</button>
+</div>
+<div id="status">Your turn (X)</div>
+<div id="board"></div>
+<button id="restart" onclick="restart()">Restart</button>
+
+<script>
+const board = document.getElementById('board');
+const status = document.getElementById('status');
+let cells, state, turn, over, mode = 'ai';
+const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function init() {
+  board.innerHTML = '';
+  cells = []; state = Array(9).fill(''); turn = 'X'; over = false;
+  for (let i = 0; i < 9; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'cell';
+    btn.addEventListener('click', () => play(i));
+    board.appendChild(btn);
+    cells.push(btn);
+  }
+  status.textContent = mode === '2p' ? "X's turn" : "Your turn (X)";
+}
+
+function play(i) {
+  if (over || state[i]) return;
+  if (mode === 'ai' && turn === 'O') return;
+  place(i, turn);
+  if (over) return;
+  turn = turn === 'X' ? 'O' : 'X';
+  if (mode === 'ai') {
+    status.textContent = 'Computer thinking...';
+    setTimeout(() => { aiMove(); }, 300);
+  } else {
+    status.textContent = turn + "'s turn";
+  }
+}
+
+function place(i, mark) {
+  state[i] = mark;
+  cells[i].textContent = mark;
+  cells[i].classList.add('taken', mark.toLowerCase());
+  const w = checkWin(mark);
+  if (w) {
+    over = true;
+    w.forEach(j => cells[j].classList.add('win'));
+    status.textContent = mode === 'ai'
+      ? (mark === 'X' ? 'You win!' : 'Computer wins!')
+      : mark + ' wins!';
+  } else if (state.every(c => c)) {
+    over = true;
+    status.textContent = "It's a draw!";
+  }
+}
+
+function checkWin(mark) {
+  for (const w of wins) if (w.every(i => state[i] === mark)) return w;
+  return null;
+}
+
+function aiMove() {
+  const move = bestMove();
+  place(move, 'O');
+  if (!over) { turn = 'X'; status.textContent = 'Your turn (X)'; }
+}
+
+function bestMove() {
+  let best = -Infinity, pick = -1;
+  for (let i = 0; i < 9; i++) {
+    if (state[i]) continue;
+    state[i] = 'O';
+    const score = minimax(false, -Infinity, Infinity);
+    state[i] = '';
+    if (score > best) { best = score; pick = i; }
+  }
+  return pick;
+}
+
+function minimax(isMax, alpha, beta) {
+  if (checkWin('O')) return 1;
+  if (checkWin('X')) return -1;
+  if (state.every(c => c)) return 0;
+  if (isMax) {
+    let v = -Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (state[i]) continue;
+      state[i] = 'O';
+      v = Math.max(v, minimax(false, alpha, beta));
+      state[i] = '';
+      alpha = Math.max(alpha, v);
+      if (beta <= alpha) break;
+    }
+    return v;
+  } else {
+    let v = Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (state[i]) continue;
+      state[i] = 'X';
+      v = Math.min(v, minimax(true, alpha, beta));
+      state[i] = '';
+      beta = Math.min(beta, v);
+      if (beta <= alpha) break;
+    }
+    return v;
+  }
+}
+
+function restart() { init(); }
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#mode button').forEach((b, i) =>
+    b.classList.toggle('active', (i === 0 && m === 'ai') || (i === 1 && m === '2p'))
+  );
+  init();
+}
+
+init();
+</script>
+</body>
+</html>
